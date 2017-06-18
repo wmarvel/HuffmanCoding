@@ -1,6 +1,6 @@
 module Lib
     ( HuffmanCode
---    , fromString
+    , fromList
     ) where
 
 import Data.Eq
