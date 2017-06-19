@@ -85,13 +85,22 @@ fromList l =
    then Nothing
    else Just (collapseCode (makeLeaves l))
 
-encodeToList :: (Ord a) => Maybe (HuffmanCode a) -> a -> Maybe [Bool]
-encodeToList Nothing v = Nothing
-encodeToList mhc v = go (fromJust mhc) v []
+
+-- fun signatures would be -- we take a result and return that same
+-- result type? so a -> a
+walkTree :: (Ord a) => HuffmanCode a -> a -> b -> (b -> b) -> (b -> b) -> Maybe b
+walkTree hc sym out lfun rfun = go hc out
   where
-    go (HuffmanLeaf _ lv) v l =
-      if v == lv then Just (reverse l) else Nothing
-    go (HuffmanNode _ _ left right) v l =
-      if (contains v left) then go left v (False : l)
-      else if (contains v right) then go right v (True : l)
+    go (HuffmanLeaf _ lsym) result =
+      if sym == lsym then Just result else Nothing
+    go (HuffmanNode _ _ left right) result =
+      if (contains sym left) then go left (lfun result)
+      else if (contains sym right) then go right (rfun result)
       else Nothing
+
+encodeToList :: (Ord a) => Maybe (HuffmanCode a) -> a -> Maybe [Bool]
+encodeToList Nothing sym = Nothing
+encodeToList mhc sym =
+  case (walkTree (fromJust mhc) sym [] (\x -> False : x) (\x -> True : x)) of
+    Nothing -> Nothing
+    Just list -> Just (reverse list)
