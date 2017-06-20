@@ -17,7 +17,7 @@ import Test.Hspec
 -- at all
 
 -- This seems a little bit silly
-reflexivity :: (Ord a) => Maybe (HuffmanCode a) -> Bool
+reflexivity :: (Ord a, Real b) => Maybe (HuffmanCode a b) -> Bool
 reflexivity mhc = case mhc of
   Just hc -> hc <= hc && hc == hc
   _ -> False
@@ -42,7 +42,7 @@ simpleTest =
         , Just [False, False]
         , Just [True, False]
         ]
-  in map (encodeToList testcode) testchars == expected
+  in expected == map (encodeToList testcode) testchars
 
 main :: IO ()
 main =

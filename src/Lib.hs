@@ -10,31 +10,31 @@ import Data.List
 import Data.Maybe
 import Data.Ord
 
-data HuffmanCode a
-  = HuffmanLeaf Int
-                a
-  | HuffmanNode Int
-                [a]
-                (HuffmanCode a)
-                (HuffmanCode a)
+data HuffmanCode a b
+  = HuffmanLeaf a
+                b
+  | HuffmanNode [a]
+                b
+                (HuffmanCode a b)
+                (HuffmanCode a b)
   deriving (Eq, Show)
 
 -- The Ord instance is explicitly specified because the derived Ord instance
 -- does not compare weights first.
-instance (Ord a) => Ord (HuffmanCode a) where
-  compare (HuffmanLeaf w1 v1) (HuffmanLeaf w2 v2) =
+instance (Ord a, Real b) => Ord (HuffmanCode a b) where
+  compare (HuffmanLeaf v1 w1) (HuffmanLeaf v2 w2) =
     if w1 /= w2
       then compare w1 w2
       else compare v1 v2
-  compare (HuffmanNode w1 _ _ _) (HuffmanLeaf w2 _) =
+  compare (HuffmanNode _ w1 _ _) (HuffmanLeaf _ w2) =
     if w1 /= w2
       then compare w1 w2
       else GT
-  compare (HuffmanLeaf w1 _) (HuffmanNode w2 _ _ _) =
+  compare (HuffmanLeaf _ w1) (HuffmanNode _ w2 _ _) =
     if w1 /= w2
       then compare w1 w2
       else LT
-  compare (HuffmanNode w1 s1 l1 r1) (HuffmanNode w2 s2 l2 r2) =
+  compare (HuffmanNode s1 w1 l1 r1) (HuffmanNode s2 w2 l2 r2) =
     if w1 /= w2
       then compare w1 w2
       else if s1 /= s2
@@ -43,47 +43,54 @@ instance (Ord a) => Ord (HuffmanCode a) where
                     then compare l1 l2
                     else compare r1 r2
 
-weight :: HuffmanCode a -> Int
-weight (HuffmanLeaf w _) = w
-weight (HuffmanNode w _ _ _) = w
+weight :: (Ord a, Real b) => HuffmanCode a b -> b
+weight (HuffmanLeaf _ w) = w
+weight (HuffmanNode _ w _ _) = w
 
-values :: HuffmanCode a -> [a]
-values (HuffmanLeaf _ v) = v : []
-values (HuffmanNode _ l _ _) = l
+values :: HuffmanCode a b -> [a]
+values (HuffmanLeaf v _) = v : []
+values (HuffmanNode l _ _ _) = l
 
-contains :: (Eq a) => a -> HuffmanCode a -> Bool
-contains v (HuffmanLeaf _ lv) = v == lv
-contains v (HuffmanNode _ l _ _) = elem v l
+contains :: (Eq a) => a -> HuffmanCode a b -> Bool
+contains v (HuffmanLeaf lv _) = v == lv
+contains v (HuffmanNode l _ _ _) = elem v l
 
-makeLeaf :: [a] -> HuffmanCode a
-makeLeaf s = HuffmanLeaf (length s) (head s)
+makeLeaf :: [a] -> HuffmanCode a Int
+makeLeaf s = HuffmanLeaf (head s) (length s)
 
-makeNode :: HuffmanCode a -> HuffmanCode a -> HuffmanCode a
+makeNode ::
+     (Ord a, Real b) => HuffmanCode a b -> HuffmanCode a b -> HuffmanCode a b
 makeNode c1 c2 =
-  HuffmanNode (weight c1 + weight c2) (values c1 ++ values c2) c1 c2
+  HuffmanNode (values c1 ++ values c2) (weight c1 + weight c2) c1 c2
 
-makeLeaves :: (Ord a) => [a] -> [HuffmanCode a]
+makeLeaves :: (Ord a) => [a] -> [HuffmanCode a Int]
 makeLeaves s = (sort (map makeLeaf (groupBy (==) (sort s))))
 
-collapseCode :: (Ord a) => [HuffmanCode a] -> HuffmanCode a
+collapseCode :: (Ord a, Real b) => [HuffmanCode a b] -> HuffmanCode a b
 collapseCode nodes =
-  if length nodes == 1
-    then head nodes
-    else let n1 = head nodes
-             n2 = head (drop 1 nodes)
-         in collapseCode (sort ((makeNode n1 n2) : (drop 2 nodes)))
+   if length nodes == 1
+     then head nodes
+     else let n1 = head nodes
+              n2 = head (drop 1 nodes)
+          in collapseCode (sort ((makeNode n1 n2) : (drop 2 nodes)))
 
-fromList :: (Ord a) => [a] -> Maybe (HuffmanCode a)
+fromList :: (Ord a) => [a] -> Maybe (HuffmanCode a Int)
 fromList l =
-  if (length l) < 1
-    then Nothing
-    else Just (collapseCode (makeLeaves l))
+   if (length l) < 1
+     then Nothing
+     else Just (collapseCode (makeLeaves l))
 
 walkTree ::
-     (Ord a) => HuffmanCode a -> a -> b -> (b -> b) -> (b -> b) -> Maybe b
+     (Ord a, Real b)
+  => HuffmanCode a b
+  -> a
+  -> c
+  -> (c -> c)
+  -> (c -> c)
+  -> Maybe c
 walkTree hc sym out lfun rfun = go hc out
   where
-    go (HuffmanLeaf _ lsym) result =
+    go (HuffmanLeaf lsym _) result =
       if sym == lsym
         then Just result
         else Nothing
@@ -94,7 +101,7 @@ walkTree hc sym out lfun rfun = go hc out
                then go right (rfun result)
                else Nothing
 
-encodeToList :: (Ord a) => Maybe (HuffmanCode a) -> a -> Maybe [Bool]
+encodeToList :: (Ord a, Real b) => Maybe (HuffmanCode a b) -> a -> Maybe [Bool]
 encodeToList Nothing sym = Nothing
 encodeToList mhc sym =
   case (walkTree (fromJust mhc) sym [] (\x -> False : x) (\x -> True : x)) of
