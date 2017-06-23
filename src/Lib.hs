@@ -43,29 +43,37 @@ instance (Ord a, Real b) => Ord (HuffmanCode a b) where
                     then compare l1 l2
                     else compare r1 r2
 
+-- | Return the weight of a HuffmanCode
 weight :: (Ord a, Real b) => HuffmanCode a b -> b
 weight (HuffmanLeaf _ w) = w
 weight (HuffmanNode _ w _ _) = w
 
+-- | Return the values of a HuffmanCode as a list
 values :: HuffmanCode a b -> [a]
 values (HuffmanLeaf v _) = v : []
 values (HuffmanNode l _ _ _) = l
 
+-- | Return true if the value given is one of the values in the HuffmanCode
 contains :: (Eq a) => a -> HuffmanCode a b -> Bool
 contains v (HuffmanLeaf lv _) = v == lv
 contains v (HuffmanNode l _ _ _) = elem v l
 
+-- | Make a leaf node from a list of identical values
 makeLeaf :: [a] -> HuffmanCode a Int
 makeLeaf s = HuffmanLeaf (head s) (length s)
 
+-- | Make a new HuffmanCode by combining two HuffmanCodes. The two codes
+-- must be disjoint.
 makeNode ::
      (Ord a, Real b) => HuffmanCode a b -> HuffmanCode a b -> HuffmanCode a b
 makeNode c1 c2 =
   HuffmanNode (values c1 ++ values c2) (weight c1 + weight c2) c1 c2
 
+-- | Make a list of leafs from a list of values
 makeLeaves :: (Ord a) => [a] -> [HuffmanCode a Int]
 makeLeaves s = (sort (map makeLeaf (groupBy (==) (sort s))))
 
+-- | Collapse a list of leaves into a single HuffmanCode
 collapseCode :: (Ord a, Real b) => [HuffmanCode a b] -> HuffmanCode a b
 collapseCode nodes =
    if length nodes == 1
@@ -74,21 +82,24 @@ collapseCode nodes =
               n2 = head (drop 1 nodes)
           in collapseCode (sort ((makeNode n1 n2) : (drop 2 nodes)))
 
+-- | Create a HuffmanCode from a list of values
 fromList :: (Ord a) => [a] -> Maybe (HuffmanCode a Int)
 fromList l =
    if (length l) < 1
      then Nothing
      else Just (collapseCode (makeLeaves l))
 
+-- | Walk a HuffmanCode tree, creating a result by calling provided
+-- left and right functions
 walkTree ::
      (Ord a, Real b)
   => HuffmanCode a b
   -> a
+  -> (c -> c)
+  -> (c -> c)
   -> c
-  -> (c -> c)
-  -> (c -> c)
   -> Maybe c
-walkTree hc sym out lfun rfun = go hc out
+walkTree hc sym lfun rfun out = go hc out
   where
     go (HuffmanLeaf lsym _) result =
       if sym == lsym
@@ -101,9 +112,8 @@ walkTree hc sym out lfun rfun = go hc out
                then go right (rfun result)
                else Nothing
 
+-- | Return the code representing a symbol as a list of booleans 
 encodeToList :: (Ord a, Real b) => Maybe (HuffmanCode a b) -> a -> Maybe [Bool]
-encodeToList Nothing sym = Nothing
-encodeToList mhc sym =
-  case (walkTree (fromJust mhc) sym [] (\x -> False : x) (\x -> True : x)) of
-    Nothing -> Nothing
-    Just list -> Just (reverse list)
+encodeToList mhc sym = fmap reverse $ mhc >>= walk
+  where
+    walk hc = walkTree hc sym (\x -> False : x) (\x -> True : x) []
