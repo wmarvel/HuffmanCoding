@@ -76,44 +76,35 @@ makeLeaves s = (sort (map makeLeaf (groupBy (==) (sort s))))
 -- | Collapse a list of leaves into a single HuffmanCode
 collapseCode :: (Ord a, Real b) => [HuffmanCode a b] -> HuffmanCode a b
 collapseCode nodes =
-   if length nodes == 1
-     then head nodes
-     else let n1 = head nodes
-              n2 = head (drop 1 nodes)
-          in collapseCode (sort ((makeNode n1 n2) : (drop 2 nodes)))
+  if length nodes == 1
+    then head nodes
+    else let n1 = head nodes
+             n2 = head (drop 1 nodes)
+         in collapseCode (sort ((makeNode n1 n2) : (drop 2 nodes)))
 
 -- | Create a HuffmanCode from a list of values
 fromList :: (Ord a) => [a] -> Maybe (HuffmanCode a Int)
 fromList l =
-   if (length l) < 1
-     then Nothing
-     else Just (collapseCode (makeLeaves l))
+  if length l < 1
+    then Nothing
+    else Just (collapseCode (makeLeaves l))
 
--- | Walk a HuffmanCode tree, creating a result by calling provided
--- left and right functions
+-- | Walk a HuffmanCode tree, creating a result by passing a provided
+-- function False if we're taking the left branch and True if we're taking
+-- the right branch
 walkTree ::
-     (Ord a, Real b)
-  => HuffmanCode a b
-  -> a
-  -> (c -> c)
-  -> (c -> c)
-  -> c
-  -> Maybe c
-walkTree hc sym lfun rfun out = go hc out
+     (Ord a, Real b) => HuffmanCode a b -> a -> (Bool -> c -> c) -> c -> Maybe c
+walkTree hc sym fun out = go hc out
   where
-    go (HuffmanLeaf lsym _) result =
-      if sym == lsym
-        then Just result
-        else Nothing
-    go (HuffmanNode _ _ left right) result =
-      if (contains sym left)
-        then go left (lfun result)
-        else if (contains sym right)
-               then go right (rfun result)
-               else Nothing
+    go (HuffmanLeaf lsym _) result
+      | sym == lsym = Just result
+    go (HuffmanNode _ _ left right) result
+      | contains sym left = go left $ fun False result
+      | contains sym right = go right $ fun True result
+    go _ _ = Nothing
 
 -- | Return the code representing a symbol as a list of booleans 
 encodeToList :: (Ord a, Real b) => Maybe (HuffmanCode a b) -> a -> Maybe [Bool]
 encodeToList mhc sym = fmap reverse $ mhc >>= walk
   where
-    walk hc = walkTree hc sym (\x -> False : x) (\x -> True : x) []
+    walk hc = walkTree hc sym (:) []
