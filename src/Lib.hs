@@ -71,7 +71,7 @@ makeNode c1 c2 =
 
 -- | Make a list of leafs from a list of values
 makeLeaves :: (Ord a) => [a] -> [HuffmanCode a Int]
-makeLeaves s = (sort (map makeLeaf (groupBy (==) (sort s))))
+makeLeaves s = sort $ map makeLeaf $ groupBy (==) $ sort s
 
 -- | Collapse a list of leaves into a single HuffmanCode
 collapseCode :: (Ord a, Real b) => [HuffmanCode a b] -> HuffmanCode a b
@@ -79,19 +79,19 @@ collapseCode nodes =
   if length nodes == 1
     then head nodes
     else let n1 = head nodes
-             n2 = head (drop 1 nodes)
-         in collapseCode (sort ((makeNode n1 n2) : (drop 2 nodes)))
+             n2 = head $ drop 1 nodes
+         in collapseCode $ sort $ makeNode n1 n2 : drop 2 nodes
 
 -- | Create a HuffmanCode from a list of values
 fromList :: (Ord a) => [a] -> Maybe (HuffmanCode a Int)
 fromList l =
-  if length l < 1
-    then Nothing
-    else Just (collapseCode (makeLeaves l))
+  if length l > 0
+    then Just $ collapseCode $ makeLeaves l
+    else Nothing
 
--- | Walk a HuffmanCode tree, creating a result by passing a provided
--- function False if we're taking the left branch and True if we're taking
--- the right branch
+-- | Walk a HuffmanCode tree, creating a result by passing a provided result
+-- accumulation function False if we're taking the left branch and True
+-- if we're taking the right branch
 walkTree ::
      (Ord a, Real b) => HuffmanCode a b -> a -> (Bool -> c -> c) -> c -> Maybe c
 walkTree hc sym fun out = go hc out
