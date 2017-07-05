@@ -1,4 +1,4 @@
-module Lib
+module HuffmanCode
   ( HuffmanCode
   , fromList
   , encodeToList

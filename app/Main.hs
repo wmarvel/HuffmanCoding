@@ -1,6 +1,6 @@
 module Main where
 
-import Lib
+import HuffmanCode
 
 main :: IO ()
 main = putStrLn "Hello, World"

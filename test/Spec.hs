@@ -1,5 +1,5 @@
 
-import Lib
+import HuffmanCode
 import Data.Maybe
 import Data.Tuple
 import Test.Hspec
