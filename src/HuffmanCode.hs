@@ -2,13 +2,10 @@ module HuffmanCode
   ( HuffmanCode
   , fromList
   , encodeToList
+  , listCoder
   ) where
 
-import Data.Char
-import Data.Eq
 import Data.List
-import Data.Maybe
-import Data.Ord
 
 data HuffmanCode a b
   = HuffmanLeaf a
@@ -102,3 +99,7 @@ encodeToList :: (Ord a, Real b) => Maybe (HuffmanCode a b) -> a -> Maybe [Bool]
 encodeToList mhc sym = fmap reverse $ mhc >>= walk
   where
     walk hc = walkTree hc sym (:) []
+
+-- | Return an encoder to list
+listCoder :: (Ord a) => [a] -> a -> Maybe [Bool]
+listCoder str = encodeToList $ fromList str
