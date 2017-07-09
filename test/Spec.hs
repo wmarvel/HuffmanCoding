@@ -48,7 +48,7 @@ main :: IO ()
 main =
   hspec $ do
     describe "HuffmanCode" $ do
-      it "generate the correct codings for a simple test" $
+      it "must generate the correct codings for a simple test" $
         simpleTest `shouldBe` True
     describe "HuffmanCoding Ord" $ do
       it "has at least one Leaf with the Reflexivity property" $
